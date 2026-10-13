@@ -11,3 +11,4 @@ class MenuItem(Base):
     price = Column(Float, nullable=False)
     category = Column(String(50))
     is_available = Column(Boolean, default=True)
+    is_vegetarian = Column(Boolean, default=False, nullable=False)
