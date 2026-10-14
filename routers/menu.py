@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -8,6 +7,7 @@ from schemas.menu import MenuItemCreate, MenuItemUpdate
 from security import require_admin
 
 router = APIRouter()
+
 
 
 @router.post("/menu")
@@ -20,7 +20,12 @@ def create_menu_item(
         name=item.name,
         description=item.description,
         price=item.price,
-        category=item.category
+        category=item.category,
+        is_vegetarian=item.is_vegetarian,
+        is_vegan=item.is_vegan,
+        spice_level=item.spice_level,
+        ingredients=item.ingredients,
+        allergens=item.allergens
     )
 
     db.add(new_item)
@@ -34,8 +39,14 @@ def create_menu_item(
         "description": new_item.description,
         "price": new_item.price,
         "category": new_item.category,
-        "is_available": new_item.is_available
+        "is_available": new_item.is_available,
+        "is_vegetarian": new_item.is_vegetarian,
+        "is_vegan": new_item.is_vegan,
+        "spice_level": new_item.spice_level,
+        "ingredients": new_item.ingredients,
+        "allergens": new_item.allergens
     }
+
 
 
 @router.get("/menu")
@@ -70,6 +81,11 @@ def update_menu_item(
     menu_item.price = item.price
     menu_item.category = item.category
     menu_item.is_available = item.is_available
+    menu_item.is_vegetarian = item.is_vegetarian
+    menu_item.is_vegan = item.is_vegan
+    menu_item.spice_level = item.spice_level
+    menu_item.ingredients = item.ingredients
+    menu_item.allergens = item.allergens
 
     db.commit()
     db.refresh(menu_item)
@@ -81,7 +97,12 @@ def update_menu_item(
         "description": menu_item.description,
         "price": menu_item.price,
         "category": menu_item.category,
-        "is_available": menu_item.is_available
+        "is_available": menu_item.is_available,
+        "is_vegetarian": menu_item.is_vegetarian,
+        "is_vegan": menu_item.is_vegan,
+        "spice_level": menu_item.spice_level,
+        "ingredients": menu_item.ingredients,
+        "allergens": menu_item.allergens
     }
 
 @router.delete("/menu/{item_id}")
