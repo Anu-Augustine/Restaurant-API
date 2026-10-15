@@ -12,6 +12,7 @@ class MenuItemCreate(BaseModel):
     spice_level: int = Field(default=0, ge=0, le=3)
     ingredients: Optional[str] = None
     allergens: Optional[str] = None
+    image: Optional[str] = None
 
 
 class MenuItemUpdate(BaseModel):
@@ -25,3 +26,4 @@ class MenuItemUpdate(BaseModel):
     spice_level: int = Field(default=0, ge=0, le=3)
     ingredients: Optional[str] = None
     allergens: Optional[str] = None
+    image: Optional[str] = None

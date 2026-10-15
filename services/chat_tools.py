@@ -65,6 +65,7 @@ def search_menu(
             "is_vegetarian": item.is_vegetarian, "is_vegan": item.is_vegan,
             "spice_level": item.spice_level, "ingredients": item.ingredients,
             "allergens": item.allergens, "is_available": item.is_available,
+            "image": item.image,
         })
     return results
 
@@ -89,7 +90,7 @@ def get_menu_item_details(db: Session, item_id: int | None = None, item_name: st
         "category": item.category, "is_available": item.is_available,
         "is_vegetarian": item.is_vegetarian, "is_vegan": item.is_vegan,
         "spice_level": item.spice_level, "ingredients": item.ingredients,
-        "allergens": item.allergens,
+        "allergens": item.allergens, "image": item.image,
     }
 
 

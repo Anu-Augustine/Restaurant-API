@@ -25,7 +25,8 @@ def create_menu_item(
         is_vegan=item.is_vegan,
         spice_level=item.spice_level,
         ingredients=item.ingredients,
-        allergens=item.allergens
+        allergens=item.allergens,
+        image=item.image
     )
 
     db.add(new_item)
@@ -44,7 +45,8 @@ def create_menu_item(
         "is_vegan": new_item.is_vegan,
         "spice_level": new_item.spice_level,
         "ingredients": new_item.ingredients,
-        "allergens": new_item.allergens
+        "allergens": new_item.allergens,
+        "image": new_item.image
     }
 
 
@@ -86,6 +88,7 @@ def update_menu_item(
     menu_item.spice_level = item.spice_level
     menu_item.ingredients = item.ingredients
     menu_item.allergens = item.allergens
+    menu_item.image = item.image
 
     db.commit()
     db.refresh(menu_item)
@@ -102,7 +105,8 @@ def update_menu_item(
         "is_vegan": menu_item.is_vegan,
         "spice_level": menu_item.spice_level,
         "ingredients": menu_item.ingredients,
-        "allergens": menu_item.allergens
+        "allergens": menu_item.allergens,
+        "image": menu_item.image
     }
 
 @router.delete("/menu/{item_id}")

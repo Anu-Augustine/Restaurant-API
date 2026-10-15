@@ -16,3 +16,4 @@ class MenuItem(Base):
     spice_level = Column(Integer, default=0, nullable=False)# 0 = Not specified, 1 = Mild, 2 = Medium, 3 = Hot
     ingredients = Column(String(500), nullable=True)
     allergens = Column(String(255), nullable=True)
+    image = Column(String(255), nullable=True)
