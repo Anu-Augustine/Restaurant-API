@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { clearToken, getProfile, getToken, login as loginRequest } from "../api";
+import { ApiError, clearToken, getAdminArea, getProfile, getToken, login as loginRequest } from "../api";
 
 const AuthContext = createContext(null);
 
@@ -40,17 +40,32 @@ export function AuthProvider({ children }) {
     function onUnauthorized() {
       clearToken();
       setUser(null);
-      navigate("/login", { replace: true });
+      const adminPath = window.location.pathname.startsWith("/admin");
+      navigate(adminPath ? "/admin/login" : "/login", { replace: true });
     }
     window.addEventListener("auth:unauthorized", onUnauthorized);
     return () => window.removeEventListener("auth:unauthorized", onUnauthorized);
   }, [navigate]);
 
-  async function signIn(email, password) {
+  async function signIn(email, password, options = {}) {
     await loginRequest(email, password);
-    const profile = await getProfile();
-    setUser(profile);
-    return profile;
+    try {
+      const profile = await getProfile();
+      if (options.admin && profile.role !== "admin") {
+        clearToken();
+        setUser(null);
+        throw new ApiError("This account does not have admin access.", 403);
+      }
+      if (options.admin) await getAdminArea();
+      setUser(profile);
+      return profile;
+    } catch (error) {
+      if (options.admin) {
+        clearToken();
+        setUser(null);
+      }
+      throw error;
+    }
   }
 
   function signOut() {

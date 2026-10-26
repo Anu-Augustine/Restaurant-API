@@ -19,6 +19,7 @@ export function MenuPage() {
   const [error, setError] = useState("");
   const [addedId, setAddedId] = useState(null);
   const rowRef = useRef(null);
+  const addedTimer = useRef(null);
   const shelf = params.get("shelf") || "popular";
   const query = (params.get("q") || "").trim().toLowerCase();
 
@@ -55,9 +56,13 @@ export function MenuPage() {
   const sidePhotos = (filtered.length > 2 ? filtered.slice(1, 3) : items.slice(0, 2));
   const count = filtered.length;
 
+  useEffect(() => () => clearTimeout(addedTimer.current), []);
+
   function add(dish) {
     addItem(dish, 1);
     setAddedId(dish.id);
+    clearTimeout(addedTimer.current);
+    addedTimer.current = setTimeout(() => setAddedId(null), 2500);
   }
 
   function scrollRow(direction) {
@@ -131,9 +136,10 @@ export function MenuPage() {
                 <div>
                   <strong>{dish.name}</strong>
                   <small>{formatINR(dish.price)}</small>
+                  {addedId === dish.id && <span className="added-note" role="status">Added to cart</span>}
                 </div>
                 <button type="button" className="mini-go" aria-label={`Add ${dish.name}`} onClick={() => add(dish)}>
-                  {addedId === dish.id ? "✓" : "→"}
+                  →
                 </button>
               </div>
             </article>
@@ -147,9 +153,12 @@ export function MenuPage() {
             <h2>{featured.name}</h2>
             <p>{featured.description || "A house favorite, ready when you are."}</p>
             <p className="feature-price">{formatINR(featured.price)}</p>
-            <button type="button" className="pill" onClick={() => add(featured)}>
-              {addedId === featured.id ? "Added" : "Add to cart"} <span aria-hidden="true">→</span>
-            </button>
+            <div className="feature-actions">
+              <button type="button" className="pill" onClick={() => add(featured)}>
+                Add to cart <span aria-hidden="true">→</span>
+              </button>
+              {addedId === featured.id && <span className="added-note" role="status">Added to cart</span>}
+            </div>
           </div>
           <div className="feature-stack">
             {(sidePhotos.length ? sidePhotos : [featured]).map((dish) => (
@@ -170,9 +179,10 @@ export function MenuPage() {
                   <div>
                     <strong>{dish.name}</strong>
                     <small>{formatINR(dish.price)}</small>
+                    {addedId === dish.id && <span className="added-note" role="status">Added to cart</span>}
                   </div>
                   <button type="button" className="mini-go" aria-label={`Add ${dish.name}`} onClick={() => add(dish)}>
-                    {addedId === dish.id ? "✓" : "→"}
+                    →
                   </button>
                 </div>
               </article>

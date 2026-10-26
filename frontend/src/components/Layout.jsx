@@ -93,13 +93,18 @@ export function Layout({ children }) {
                 <>
                   <p>{user.name}</p>
                   <NavLink to="/orders" onClick={() => setAccountOpen(false)}>Orders</NavLink>
-                  {user.role === "admin" && <NavLink to="/admin" onClick={() => setAccountOpen(false)}>Admin</NavLink>}
+                  {user.role === "admin" ? (
+                    <NavLink to="/admin" onClick={() => setAccountOpen(false)}>Admin</NavLink>
+                  ) : (
+                    <NavLink to="/admin/login" onClick={() => setAccountOpen(false)}>Admin login</NavLink>
+                  )}
                   <button type="button" onClick={logout}>Log out</button>
                 </>
               ) : (
                 <>
                   <NavLink to="/login" onClick={() => setAccountOpen(false)}>Log in</NavLink>
                   <NavLink to="/register" onClick={() => setAccountOpen(false)}>Register</NavLink>
+                  <NavLink to="/admin/login" onClick={() => setAccountOpen(false)}>Admin login</NavLink>
                 </>
               )}
             </div>
@@ -126,6 +131,7 @@ export function Layout({ children }) {
             <h2>Get In Touch</h2>
             <NavLink to="/chat">Chat with us</NavLink>
             <NavLink to="/login">Account</NavLink>
+            <NavLink to="/admin/login">Admin login</NavLink>
             <a href="#dishes">Today's dishes</a>
           </div>
           <form onSubmit={onJoin}>

@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import {
   createMenuItem,
-  mediaUrl,
   deleteMenuItem,
+  getAdminArea,
   getAdminOrders,
+  getApiStatus,
   getMenu,
+  mediaUrl,
+  searchKnowledge,
   updateMenuItem,
   updateOrderStatus,
 } from "../api";
@@ -43,14 +46,26 @@ export function AdminPage() {
   const [notice, setNotice] = useState("");
   const [statusDrafts, setStatusDrafts] = useState({});
   const [updatingId, setUpdatingId] = useState(null);
+  const [welcome, setWelcome] = useState("");
+  const [apiStatus, setApiStatus] = useState("");
+  const [knowledgeQuery, setKnowledgeQuery] = useState("");
+  const [knowledge, setKnowledge] = useState([]);
+  const [searching, setSearching] = useState(false);
 
   async function loadAll() {
     setLoading(true);
     setError("");
     try {
-      const [dishes, rows] = await Promise.all([getMenu(), getAdminOrders()]);
+      const [dishes, rows, area, root] = await Promise.all([
+        getMenu(),
+        getAdminOrders(),
+        getAdminArea(),
+        getApiStatus(),
+      ]);
       setMenu(dishes);
       setOrders(rows);
+      setWelcome(area?.message ? `${area.message}, ${area.user}.` : "");
+      setApiStatus(root?.message || "");
       setStatusDrafts(
         Object.fromEntries(rows.map((order) => [orderIdOf(order), order.status]))
       );
@@ -178,14 +193,36 @@ export function AdminPage() {
     }
   }
 
+  async function onSearchKnowledge(event) {
+    event.preventDefault();
+    const query = knowledgeQuery.trim();
+    if (!query) {
+      setError("Enter a question to search restaurant knowledge.");
+      return;
+    }
+    setSearching(true);
+    setError("");
+    try {
+      const rows = await searchKnowledge(query);
+      setKnowledge(Array.isArray(rows) ? rows : []);
+      if (!rows?.length) setNotice("No matching restaurant notes.");
+    } catch (err) {
+      if (err.status !== 401) setError(err.message);
+    } finally {
+      setSearching(false);
+    }
+  }
+
   const sortedOrders = [...orders].sort((a, b) => Number(orderIdOf(b)) - Number(orderIdOf(a)));
 
   return (
     <section>
       <div className="page-intro">
         <h1>Kitchen admin</h1>
-        <p>Add and edit available dishes, then move orders through the kitchen.</p>
+        <p>Add and edit dishes, update every order, and search the restaurant notes.</p>
       </div>
+      {apiStatus && <p className="banner">{apiStatus}</p>}
+      {welcome && <p className="banner success">{welcome}</p>}
       {loading && <Loading>Loading the kitchen board…</Loading>}
       <ErrorNote>{error}</ErrorNote>
       {notice && <p className="banner success">{notice}</p>}
@@ -333,6 +370,36 @@ export function AdminPage() {
             )}
           </div>
         </div>
+      )}
+
+      {!loading && (
+        <section className="orders-board">
+          <h2>Restaurant knowledge</h2>
+          <form className="search-bar" onSubmit={onSearchKnowledge}>
+            <input
+              value={knowledgeQuery}
+              onChange={(event) => setKnowledgeQuery(event.target.value)}
+              placeholder="Hours, delivery, policies"
+              aria-label="Search restaurant knowledge"
+            />
+            <button type="submit" className="pill" disabled={searching}>
+              {searching ? "Searching…" : "Search"}
+            </button>
+          </form>
+          {knowledge.length > 0 && (
+            <ul className="admin-menu knowledge-list">
+              {knowledge.map((item) => (
+                <li key={`${item.title}-${item.category}`}>
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p className="muted">{item.category}</p>
+                    <p>{item.content}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
 
       {!loading && (

@@ -109,6 +109,19 @@ export function getProfile() {
   return request("/profile", { auth: true });
 }
 
+export function getApiStatus() {
+  return request("/");
+}
+
+export function getAdminArea() {
+  return request("/admin", { auth: true });
+}
+
+export function searchKnowledge(query) {
+  const params = new URLSearchParams({ query });
+  return request(`/test-knowledge?${params.toString()}`);
+}
+
 export async function getMenu() {
   const data = await request("/menu");
   return Array.isArray(data) ? data : [];

@@ -64,6 +64,9 @@ export function LoginPage() {
         <p className="muted">
           New here? <Link to="/register">Create an account</Link>
         </p>
+        <p className="muted">
+          Kitchen staff? <Link to="/admin/login">Admin login</Link>
+        </p>
       </form>
     </section>
   );
