@@ -1,4 +1,5 @@
-export const API = "http://127.0.0.1:8000";
+export const API =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 export function mediaUrl(path) {
   if (!path) return `${API}/public/images/plated.jpg`;
@@ -56,7 +57,7 @@ async function request(path, { method = "GET", body, auth = false } = {}) {
     });
   } catch {
     throw new ApiError(
-      "Cannot reach the restaurant API. Start it on http://127.0.0.1:8000.",
+       "Cannot reach the restaurant API. Please check your internet connection or try again later.",
       0
     );
   }
