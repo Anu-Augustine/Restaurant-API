@@ -46,20 +46,35 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  
   // Tell Flow who is logged in, and clear identity on logout.
   useEffect(() => {
     if (!ready) return;
 
     if (user) {
-      window.flowUser = {
-        phone: user.phone ?? user.phone_number ?? undefined,
-        name: user.name ?? user.full_name ?? undefined,
-        email: user.email ?? undefined,
+      const identity = {
+        phone: user.phone ?? user.phone_number,
+        name: user.name ?? user.full_name,
+        email: user.email,
       };
+
+      // Supported identity mechanism from the Flow guide.
+      window.flowUser = identity;
+
+      // Explicitly identify the visitor when the Flow API is available.
+      if (window.flow?.identify) {
+        window.flow.identify(identity);
+      }
     } else {
       window.flowUser = null;
+
+      // Reset only if the Flow API is available.
+      if (window.flow?.reset) {
+        window.flow.reset();
+      }
     }
   }, [user, ready]);
+
 
   useEffect(() => {
     function onUnauthorized() {
