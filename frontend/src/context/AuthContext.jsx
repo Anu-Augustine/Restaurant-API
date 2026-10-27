@@ -1,6 +1,14 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ApiError, clearToken, getAdminArea, getProfile, getToken, login as loginRequest } from "../api";
+import {
+  ApiError,
+  clearToken,
+  getAdminArea,
+  getProfile,
+  getToken,
+  login as loginRequest,
+} from "../api";
 
 const AuthContext = createContext(null);
 
@@ -20,6 +28,7 @@ export function AuthProvider({ children }) {
         }
         return;
       }
+
       try {
         const profile = await getProfile();
         if (!cancelled) setUser(profile);
@@ -31,32 +40,56 @@ export function AuthProvider({ children }) {
     }
 
     loadProfile();
+
     return () => {
       cancelled = true;
     };
   }, []);
 
+  // Tell Flow who is logged in, and clear identity on logout.
+  useEffect(() => {
+    if (!ready) return;
+
+    if (user) {
+      window.flowUser = {
+        phone: user.phone ?? user.phone_number ?? undefined,
+        name: user.name ?? user.full_name ?? undefined,
+        email: user.email ?? undefined,
+      };
+    } else {
+      window.flowUser = null;
+    }
+  }, [user, ready]);
+
   useEffect(() => {
     function onUnauthorized() {
       clearToken();
       setUser(null);
+
       const adminPath = window.location.pathname.startsWith("/admin");
       navigate(adminPath ? "/admin/login" : "/login", { replace: true });
     }
+
     window.addEventListener("auth:unauthorized", onUnauthorized);
-    return () => window.removeEventListener("auth:unauthorized", onUnauthorized);
+
+    return () =>
+      window.removeEventListener("auth:unauthorized", onUnauthorized);
   }, [navigate]);
 
   async function signIn(email, password, options = {}) {
     await loginRequest(email, password);
+
     try {
       const profile = await getProfile();
+
       if (options.admin && profile.role !== "admin") {
         clearToken();
         setUser(null);
         throw new ApiError("This account does not have admin access.", 403);
       }
+
       if (options.admin) await getAdminArea();
+
       setUser(profile);
       return profile;
     } catch (error) {
@@ -82,6 +115,10 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used inside AuthProvider");
+
+  if (!context) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
+
   return context;
 }

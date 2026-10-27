@@ -23,6 +23,7 @@ def register(
     new_user = User(
         name=user.name,
         email=user.email,
+        phone=user.phone,
         password=hash_password(user.password)
     )
 
@@ -76,6 +77,7 @@ def profile(
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email,
+        "phone": current_user.phone,
         "role": current_user.role
     }
 

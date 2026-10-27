@@ -10,3 +10,4 @@ class User(Base):
     email = Column(String(100), unique=True, nullable=False, index=True)
     password = Column(String(255), nullable=False)
     role = Column(String(20), default="customer")
+    phone = Column(String(20), nullable=True)
