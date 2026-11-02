@@ -12,4 +12,4 @@ class Order(Base):
 
     total_amount = Column(Float, nullable=False, default=0.0)
 
-    status = Column(String(20), nullable=False, default="pending")
+    status = Column(String(40), nullable=False, default="pending")

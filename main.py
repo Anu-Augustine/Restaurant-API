@@ -1,8 +1,10 @@
+import logging
 import time
 import re
 from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import Base, engine, get_db
@@ -25,7 +27,36 @@ from services.chat_tools import get_my_orders, get_order_status
 
 
 app = FastAPI()
+logger = logging.getLogger("uvicorn.error")
 
+
+class InternalErrorMiddleware:
+    """Turn unhandled errors into a JSON 500 before they leave CORS.
+
+    FastAPI sends a handler for Exception to the outermost server-error
+    middleware, which does not add Access-Control-Allow-Origin. The browser
+    then hides the status and the frontend shows a network-failure message.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        try:
+            await self.app(scope, receive, send)
+        except Exception:
+            logger.exception("Unhandled %s %s", scope.get("method"), scope.get("path"))
+            response = JSONResponse(
+                status_code=500,
+                content={"detail": "Something went wrong. Please try again."},
+            )
+            await response(scope, receive, send)
+
+
+app.add_middleware(InternalErrorMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[

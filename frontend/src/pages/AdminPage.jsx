@@ -11,10 +11,8 @@ import {
   updateMenuItem,
   updateOrderStatus,
 } from "../api";
-import { SPICE_LABELS, formatINR, orderIdOf, spiceLabel } from "../format";
+import { SPICE_LABELS, ORDER_STATUSES, formatINR, orderIdOf, spiceLabel, statusLabel } from "../format";
 import { Empty, ErrorNote, Loading } from "../components/Status";
-
-const STATUSES = ["pending", "preparing", "delivered", "cancelled"];
 
 const emptyForm = {
   name: "",
@@ -185,7 +183,7 @@ export function AdminPage() {
           orderIdOf(row) === result.order_id ? { ...row, status: result.status } : row
         )
       );
-      setNotice(`Order #${result.order_id} is now ${result.status}.`);
+      setNotice(`Order #${result.order_id} is now ${statusLabel(result.status)}.`);
     } catch (err) {
       if (err.status !== 401) setError(err.message);
     } finally {
@@ -422,6 +420,10 @@ export function AdminPage() {
                 <tbody>
                   {sortedOrders.map((order) => {
                     const id = orderIdOf(order);
+                    const selectedStatus = statusDrafts[id] || order.status;
+                    const statusOptions = ORDER_STATUSES.some((status) => status.value === selectedStatus)
+                      ? ORDER_STATUSES
+                      : [...ORDER_STATUSES, { value: selectedStatus, label: statusLabel(selectedStatus) }];
                     return (
                       <tr key={id}>
                         <td>#{id}</td>
@@ -430,7 +432,7 @@ export function AdminPage() {
                         <td>
                           <select
                             aria-label={`Status for order ${id}`}
-                            value={statusDrafts[id] || order.status}
+                            value={selectedStatus}
                             onChange={(event) =>
                               setStatusDrafts((current) => ({
                                 ...current,
@@ -438,9 +440,9 @@ export function AdminPage() {
                               }))
                             }
                           >
-                            {STATUSES.map((status) => (
-                              <option key={status} value={status}>
-                                {status}
+                            {statusOptions.map((status) => (
+                              <option key={status.value} value={status.value}>
+                                {status.label}
                               </option>
                             ))}
                           </select>

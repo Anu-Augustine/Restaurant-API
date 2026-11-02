@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMyOrders } from "../api";
-import { formatINR, orderIdOf } from "../format";
+import { ORDER_POLL_MS, formatINR, orderIdOf, statusClass, statusLabel } from "../format";
 import { Empty, ErrorNote, Loading } from "../components/Status";
 
 export function OrdersPage() {
@@ -11,18 +11,27 @@ export function OrdersPage() {
 
   useEffect(() => {
     let cancelled = false;
-    getMyOrders()
-      .then((rows) => {
-        if (!cancelled) setOrders(rows);
-      })
-      .catch((err) => {
-        if (!cancelled && err.status !== 401) setError(err.message);
-      })
-      .finally(() => {
+    let loaded = false;
+
+    async function load() {
+      try {
+        const rows = await getMyOrders();
+        if (cancelled) return;
+        loaded = true;
+        setOrders(rows);
+        setError("");
+      } catch (err) {
+        if (!cancelled && err.status !== 401 && !loaded) setError(err.message);
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    }
+
+    load();
+    const timer = window.setInterval(load, ORDER_POLL_MS);
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -47,7 +56,7 @@ export function OrdersPage() {
               <li key={id}>
                 <Link to={`/orders/${id}`}>
                   <strong>Order #{id}</strong>
-                  <span className={`status-pill status-${order.status}`}>{order.status}</span>
+                  <span className={`status-pill ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
                   <span className="price">{formatINR(order.total_amount)}</span>
                 </Link>
               </li>

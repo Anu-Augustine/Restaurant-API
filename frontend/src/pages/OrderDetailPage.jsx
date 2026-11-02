@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { cancelOrder, getOrder } from "../api";
-import { formatINR } from "../format";
+import { ORDER_POLL_MS, formatINR, statusClass, statusLabel } from "../format";
 import { ErrorNote, Loading } from "../components/Status";
 
 export function OrderDetailPage() {
@@ -14,20 +14,28 @@ export function OrderDetailPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let loaded = false;
     setLoading(true);
     setError("");
-    getOrder(id)
-      .then((data) => {
-        if (!cancelled) setOrder(data);
-      })
-      .catch((err) => {
-        if (!cancelled && err.status !== 401) setError(err.message);
-      })
-      .finally(() => {
+
+    async function load() {
+      try {
+        const data = await getOrder(id);
+        if (cancelled) return;
+        loaded = true;
+        setOrder(data);
+      } catch (err) {
+        if (!cancelled && err.status !== 401 && !loaded) setError(err.message);
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    }
+
+    load();
+    const timer = window.setInterval(load, ORDER_POLL_MS);
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, [id]);
 
@@ -60,7 +68,7 @@ export function OrderDetailPage() {
           <div className="page-intro">
             <h1>Order #{order.order_id}</h1>
             <p>
-              <span className={`status-pill status-${order.status}`}>{order.status}</span>
+              <span className={`status-pill ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
             </p>
           </div>
           <ul className="line-items">

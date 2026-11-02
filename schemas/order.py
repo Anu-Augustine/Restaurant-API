@@ -11,4 +11,12 @@ class OrderCreate(BaseModel):
     items: list[OrderItemCreate]
 
 class OrderStatusUpdate(BaseModel):
-    status: Literal["pending", "preparing", "delivered","cancelled"]
+    status: Literal[
+        "pending",
+        "preparing",
+        "ready for delivery pickup",
+        "out for delivery",
+        "ready for customer pickup",
+        "delivered",
+        "cancelled",
+    ]
