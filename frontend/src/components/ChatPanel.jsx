@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { confirmChat, getChatHistory, getMenu, parseConfirmation, sendChat } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { trackBeginCheckout, trackOrderPlaced } from "../flow";
 import { formatINR } from "../format";
 import { Empty, ErrorNote, Loading } from "./Status";
 
@@ -123,6 +124,25 @@ export function ChatPanel({ compact = false }) {
     setError("");
     try {
       const result = await confirmChat(payload);
+      if (payload.action === "place_order" && result?.order_id) {
+        const lineItems = (payload.items || []).map((item) => {
+          const dish = menu.find((entry) => entry.id === item.menu_item_id);
+          return {
+            product_id: item.menu_item_id,
+            name: dish?.name || `Item ${item.menu_item_id}`,
+            price: Number(dish?.price) || 0,
+            quantity: Number(item.quantity) || 1,
+          };
+        });
+        trackBeginCheckout(lineItems, result.total_amount);
+        trackOrderPlaced({
+          name: user?.name,
+          orderId: result.order_id,
+          status: result.status,
+          total: result.total_amount,
+          lineItems,
+        });
+      }
       const total =
         result.total_amount != null ? ` Total ${formatINR(result.total_amount)}.` : "";
       const content = `${result.message || "Confirmed."} Order #${result.order_id} is ${result.status}.${total}`;

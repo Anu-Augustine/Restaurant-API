@@ -25,17 +25,23 @@ h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.035em; line-height:
 p { margin: 0; }
 a { color: #ffc7a3; }
 
-.app-shell { min-height: 100vh; }
+.app-shell {
+  min-height: 100vh;
+  padding-top: var(--header-offset, 7.5rem);
+}
 
 .site-header {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  width: min(1120px, calc(100% - 2.5rem));
-  margin: 0 auto;
-  padding: 1.35rem 0 0.2rem;
-  background: transparent;
+  margin: 0;
+  padding: 1.15rem max(1.25rem, calc((100% - 1120px) / 2)) 0.55rem;
+  background: #111111;
 }
 
 .brand {
@@ -83,6 +89,20 @@ a { color: #ffc7a3; }
   cursor: pointer;
 }
 .icon-button:hover, .icon-button.active { background: #222; }
+.icon-button.cart-pop { animation: cart-pop 0.45s ease; }
+@keyframes cart-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+.cart-flyer {
+  position: fixed;
+  z-index: 80;
+  pointer-events: none;
+  object-fit: cover;
+  border-radius: 1.15rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
 .cart-count {
   position: absolute;
   top: -0.25rem;
@@ -154,6 +174,19 @@ a { color: #ffc7a3; }
   object-fit: cover;
   border-radius: 1.5rem;
 }
+button.hero-photo {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+}
+button.hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 .pill {
   display: inline-flex;
@@ -206,6 +239,17 @@ a { color: #ffc7a3; }
   display: flex;
   flex-direction: column;
   background: transparent;
+  cursor: pointer;
+}
+.food-hit {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 1.15rem;
+  overflow: hidden;
 }
 .dish-tile { flex: 0 0 31%; min-width: 240px; scroll-snap-align: start; }
 .dish-tile img, .fan-card img {
@@ -494,6 +538,10 @@ table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
 
 :focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-button.cart-pop { animation: none; }
+}
 
 @media (max-width: 860px) {
   .block-head, .feature, .again, .footer-grid, .admin-layout, .cart-list li {

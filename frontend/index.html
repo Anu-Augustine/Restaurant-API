@@ -14,7 +14,10 @@
       rel="stylesheet"
     />
 
-    <!-- Flow Web Insights -->
+    <!-- Flow Web Insights. The queue lets events fire before pixel.js loads. -->
+    <script>
+      window.flow = window.flow || { q: [] };
+    </script>
     <script
       src="https://auto.noteyou.in/api-public/insights/pixel.js"
       data-flow-id="fl_73cfe61662be7a3e"

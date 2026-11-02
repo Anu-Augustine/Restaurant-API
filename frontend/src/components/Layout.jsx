@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ChatWidget } from "./ChatWidget";
 import { useAuth } from "../context/AuthContext";
@@ -20,7 +20,20 @@ export function Layout({ children }) {
   const [accountOpen, setAccountOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [joined, setJoined] = useState(false);
+  const headerRef = useRef(null);
   const shelf = params.get("shelf") || "popular";
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return undefined;
+    const sync = () => {
+      header.parentElement?.style.setProperty("--header-offset", `${header.offsetHeight}px`);
+    };
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
   const query = params.get("q") || "";
 
   function logout() {
@@ -55,7 +68,7 @@ export function Layout({ children }) {
 
   return (
     <div className="app-shell">
-      <header className="site-header">
+      <header className="site-header" ref={headerRef}>
         <NavLink to="/" className="brand" end>
           <span className="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="16" height="16">
@@ -83,7 +96,7 @@ export function Layout({ children }) {
           <button type="button" className="icon-button" aria-label="Account" onClick={() => setAccountOpen((open) => !open)}>
             <svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="currentColor" strokeWidth="2" d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-7 9a7 7 0 0 1 14 0" /></svg>
           </button>
-          <NavLink to="/cart" className="icon-button" aria-label="Cart">
+          <NavLink to="/cart" className="icon-button" aria-label="Cart" data-cart-target="">
             <svg viewBox="0 0 24 24" width="18" height="18"><path fill="none" stroke="currentColor" strokeWidth="2" d="M6 6h15l-1.5 9h-12L5 3H2" /><circle cx="9" cy="20" r="1.4" fill="currentColor" /><circle cx="18" cy="20" r="1.4" fill="currentColor" /></svg>
             {count > 0 && <span className="cart-count">{count}</span>}
           </NavLink>

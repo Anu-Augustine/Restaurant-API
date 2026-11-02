@@ -1,4 +1,6 @@
 import { createContext, useContext, useMemo, useState } from "react";
+import { mediaUrl } from "../api";
+import { trackAddToCart, trackRemoveFromCart } from "../flow";
 
 const CartContext = createContext(null);
 
@@ -7,6 +9,15 @@ export function CartProvider({ children }) {
 
   function addItem(dish, quantity) {
     const qty = Math.max(1, Number(quantity) || 1);
+    trackAddToCart(
+      {
+        id: dish.id,
+        name: dish.name,
+        price: dish.price,
+        image: dish.image ? mediaUrl(dish.image) : undefined,
+      },
+      qty
+    );
     setItems((current) => {
       const existing = current.find((item) => item.menu_item_id === dish.id);
       if (!existing) {
@@ -40,6 +51,8 @@ export function CartProvider({ children }) {
   }
 
   function removeItem(menuItemId) {
+    const removed = items.find((item) => item.menu_item_id === menuItemId);
+    if (removed) trackRemoveFromCart(removed.name);
     setItems((current) => current.filter((item) => item.menu_item_id !== menuItemId));
   }
 

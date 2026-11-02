@@ -9,6 +9,7 @@ import {
   getToken,
   login as loginRequest,
 } from "../api";
+import { resetFlow, setFlowUser } from "../flow";
 
 const AuthContext = createContext(null);
 
@@ -46,33 +47,11 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  
-  // Tell Flow who is logged in, and clear identity on logout.
+  // Keep the signed-in shopper on every page. Do not clear identity while
+  // the session is still loading, or while the visitor is simply logged out.
   useEffect(() => {
-    if (!ready) return;
-
-    if (user) {
-      const identity = {
-        phone: user.phone ?? user.phone_number,
-        name: user.name ?? user.full_name,
-        email: user.email,
-      };
-
-      // Supported identity mechanism from the Flow guide.
-      window.flowUser = identity;
-
-      // Explicitly identify the visitor when the Flow API is available.
-      if (window.flow?.identify) {
-        window.flow.identify(identity);
-      }
-    } else {
-      window.flowUser = null;
-
-      // Reset only if the Flow API is available.
-      if (window.flow?.reset) {
-        window.flow.reset();
-      }
-    }
+    if (!ready || !user) return;
+    setFlowUser(user);
   }, [user, ready]);
 
 
@@ -80,6 +59,7 @@ export function AuthProvider({ children }) {
     function onUnauthorized() {
       clearToken();
       setUser(null);
+      resetFlow();
 
       const adminPath = window.location.pathname.startsWith("/admin");
       navigate(adminPath ? "/admin/login" : "/login", { replace: true });
@@ -100,6 +80,7 @@ export function AuthProvider({ children }) {
       if (options.admin && profile.role !== "admin") {
         clearToken();
         setUser(null);
+        resetFlow();
         throw new ApiError("This account does not have admin access.", 403);
       }
 
@@ -111,6 +92,7 @@ export function AuthProvider({ children }) {
       if (options.admin) {
         clearToken();
         setUser(null);
+        resetFlow();
       }
       throw error;
     }
@@ -119,6 +101,7 @@ export function AuthProvider({ children }) {
   function signOut() {
     clearToken();
     setUser(null);
+    resetFlow();
   }
 
   return (

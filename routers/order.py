@@ -1,9 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from models.order import Order
-from models.order_item import OrderItem
-from models.menu import MenuItem
 from schemas.order import OrderCreate,  OrderStatusUpdate
 from security import get_current_user,  require_admin
 from services.order_service import (
@@ -16,6 +13,7 @@ from services.order_service import (
 )
 
 router = APIRouter()
+
 
 @router.post("/orders")
 def create_order_endpoint(
@@ -35,6 +33,7 @@ def create_order_endpoint(
         "total_amount": new_order.total_amount,
         "status": new_order.status
     }
+
 
 
 

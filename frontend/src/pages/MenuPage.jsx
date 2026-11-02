@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getMenu, mediaUrl } from "../api";
 import { useCart } from "../context/CartContext";
+import { flyToCart } from "../flyToCart";
 import { formatINR } from "../format";
 import { Empty, ErrorNote, Loading } from "../components/Status";
 
@@ -58,8 +59,10 @@ export function MenuPage() {
 
   useEffect(() => () => clearTimeout(addedTimer.current), []);
 
-  function add(dish) {
+  function add(dish, event) {
+    if (!dish?.id) return;
     addItem(dish, 1);
+    flyToCart(event?.currentTarget);
     setAddedId(dish.id);
     clearTimeout(addedTimer.current);
     addedTimer.current = setTimeout(() => setAddedId(null), 2500);
@@ -96,11 +99,14 @@ export function MenuPage() {
         <button type="button" className="pill" onClick={seeAll}>
           See Them All <span aria-hidden="true">→</span>
         </button>
-        <img
+        <button
+          type="button"
           className="hero-photo"
-          src={mediaUrl(featured?.image || "/public/images/plated.jpg")}
-          alt={featured?.name || "Plated dinner"}
-        />
+          onClick={(event) => (featured?.id ? add(featured, event) : flyToCart(event.currentTarget))}
+          aria-label={featured?.id ? `Add ${featured.name} to cart` : "Plated dinner"}
+        >
+          <img src={mediaUrl(featured?.image || "/public/images/plated.jpg")} alt="" />
+        </button>
       </section>
 
       {loading && <Loading>Loading the menu…</Loading>}
@@ -130,7 +136,7 @@ export function MenuPage() {
         </div>
         <div className="dish-row" ref={rowRef}>
           {filtered.map((dish) => (
-            <article key={dish.id} className="dish-tile">
+            <article key={dish.id} className="dish-tile" onClick={(event) => add(dish, event)}>
               <img src={mediaUrl(dish.image)} alt="" />
               <div className="tile-bar">
                 <div>
@@ -138,7 +144,15 @@ export function MenuPage() {
                   <small>{formatINR(dish.price)}</small>
                   {addedId === dish.id && <span className="added-note" role="status">Added to cart</span>}
                 </div>
-                <button type="button" className="mini-go" aria-label={`Add ${dish.name}`} onClick={() => add(dish)}>
+                <button
+                  type="button"
+                  className="mini-go"
+                  aria-label={`Add ${dish.name}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    add(dish, event);
+                  }}
+                >
                   →
                 </button>
               </div>
@@ -154,7 +168,7 @@ export function MenuPage() {
             <p>{featured.description || "A house favorite, ready when you are."}</p>
             <p className="feature-price">{formatINR(featured.price)}</p>
             <div className="feature-actions">
-              <button type="button" className="pill" onClick={() => add(featured)}>
+              <button type="button" className="pill" onClick={(event) => add(featured, event)}>
                 Add to cart <span aria-hidden="true">→</span>
               </button>
               {addedId === featured.id && <span className="added-note" role="status">Added to cart</span>}
@@ -162,7 +176,15 @@ export function MenuPage() {
           </div>
           <div className="feature-stack">
             {(sidePhotos.length ? sidePhotos : [featured]).map((dish) => (
-              <img key={dish.id} src={mediaUrl(dish.image)} alt={dish.name} />
+              <button
+                type="button"
+                key={dish.id}
+                className="food-hit"
+                onClick={(event) => add(dish, event)}
+                aria-label={`Add ${dish.name} to cart`}
+              >
+                <img src={mediaUrl(dish.image)} alt="" />
+              </button>
             ))}
           </div>
         </section>
@@ -173,7 +195,7 @@ export function MenuPage() {
           <h2 className="center-title">Fan Favorites</h2>
           <div className="fan-grid">
             {fans.map((dish) => (
-              <article key={dish.id} className="fan-card">
+              <article key={dish.id} className="fan-card" onClick={(event) => add(dish, event)}>
                 <img src={mediaUrl(dish.image)} alt="" />
                 <div className="tile-bar">
                   <div>
@@ -181,7 +203,15 @@ export function MenuPage() {
                     <small>{formatINR(dish.price)}</small>
                     {addedId === dish.id && <span className="added-note" role="status">Added to cart</span>}
                   </div>
-                  <button type="button" className="mini-go" aria-label={`Add ${dish.name}`} onClick={() => add(dish)}>
+                  <button
+                    type="button"
+                    className="mini-go"
+                    aria-label={`Add ${dish.name}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      add(dish, event);
+                    }}
+                  >
                     →
                   </button>
                 </div>

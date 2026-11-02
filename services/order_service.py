@@ -65,7 +65,6 @@ def create_order(
 
         db.commit()
         db.refresh(new_order)
-
         return new_order
 
     except Exception:
