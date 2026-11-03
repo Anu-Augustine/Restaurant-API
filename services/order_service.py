@@ -1,9 +1,10 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from models.order import Order
 from models.order_item import OrderItem
 from models.menu import MenuItem
+from models.user import User
 
 
 def create_order(
@@ -113,31 +114,12 @@ def get_order_details(db: Session, order_id: int, user_id: int):
             detail="Order not found"
         )
 
-    order_items = db.query(OrderItem).filter(
-        OrderItem.order_id == order.id
-    ).all()
-
-    items = []
-
-    for order_item in order_items:
-        menu_item = db.query(MenuItem).filter(
-            MenuItem.id == order_item.menu_item_id
-        ).first()
-
-        items.append({
-            "menu_item_id": order_item.menu_item_id,
-            "name": menu_item.name if menu_item else "Deleted menu item",
-            "quantity": order_item.quantity,
-            "price_at_purchase": order_item.price_at_purchase,
-            "subtotal": order_item.quantity * order_item.price_at_purchase
-        })
-
     return {
         "order_id": order.id,
         "user_id": order.user_id,
         "total_amount": order.total_amount,
         "status": order.status,
-        "items": items
+        "items": _items_for_order(db, order.id)
     }
 
 
@@ -170,6 +152,58 @@ def update_order_status(db: Session, order_id: int, status: str):
         db.rollback()
         raise
 
+def _serialize_order_item(order_item, menu_item):
+    quantity = order_item.quantity
+    price = order_item.price_at_purchase
+    return {
+        "menu_item_id": order_item.menu_item_id,
+        "name": menu_item.name if menu_item else "Deleted menu item",
+        "quantity": quantity,
+        "price_at_purchase": price,
+        "subtotal": quantity * price,
+    }
+
+
+def _items_for_order(db: Session, order_id: int):
+    order_items = db.query(OrderItem).filter(
+        OrderItem.order_id == order_id
+    ).all()
+
+    items = []
+    for order_item in order_items:
+        menu_item = db.query(MenuItem).filter(
+            MenuItem.id == order_item.menu_item_id
+        ).first()
+        items.append(_serialize_order_item(order_item, menu_item))
+    return items
+
+
 def get_all_orders(db: Session):
     orders = db.query(Order).all()
-    return orders
+    user_ids = {order.user_id for order in orders}
+    customers_by_id = {}
+
+    if user_ids:
+        customers = (
+            db.query(User)
+            .options(load_only(User.id, User.name, User.email, User.phone))
+            .filter(User.id.in_(list(user_ids)))
+            .all()
+        )
+        customers_by_id = {customer.id: customer for customer in customers}
+
+    payload = []
+    for order in orders:
+        customer = customers_by_id.get(order.user_id)
+        payload.append({
+            "id": order.id,
+            "order_id": order.id,
+            "user_id": order.user_id,
+            "total_amount": order.total_amount,
+            "status": order.status,
+            "name": customer.name if customer else "",
+            "phone": (customer.phone or "") if customer else "",
+            "email": customer.email if customer else "",
+            "items": _items_for_order(db, order.id),
+        })
+    return payload

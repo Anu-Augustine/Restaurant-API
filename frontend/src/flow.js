@@ -124,3 +124,111 @@ export function trackOrderPlaced({ name, orderId, status, total, lineItems }) {
     items,
   });
 }
+
+// The orders API stores this exact string. The screen label is "Out for delivery".
+const OUT_FOR_DELIVERY_STATUS = "out for delivery";
+
+function isOutForDelivery(status) {
+  const normalized = String(status || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+  return normalized === OUT_FOR_DELIVERY_STATUS;
+}
+
+function copyIdentity(source) {
+  if (!source || typeof source !== "object") return null;
+  const identity = {};
+  if (source.phone) identity.phone = String(source.phone);
+  if (source.name) identity.name = String(source.name);
+  if (source.email) identity.email = String(source.email);
+  if (!identity.phone && !identity.email && !identity.name) return null;
+  return identity;
+}
+
+function customerIdentity(user) {
+  if (!user || typeof user !== "object") return null;
+  return copyIdentity({
+    phone: phoneForFlow(user.phone ?? user.phone_number),
+    name: user.name ?? user.full_name,
+    email: user.email,
+  });
+}
+
+// Queue identify, then track, then the previous visitor. window.flowUser is the
+// customer only while track is queued, then the admin profile is put back.
+export function trackForCustomer(identity, eventName, props) {
+  if (typeof window === "undefined") return;
+  if (typeof eventName !== "string" || !eventName) return;
+
+  const previous = copyIdentity(window.flowUser);
+  const customer = customerIdentity(identity);
+  let switched = false;
+
+  try {
+    if (customer) {
+      window.flowUser = customer;
+      switched = true;
+      callFlow("identify", [customer]);
+    }
+    trackFlow(eventName, props);
+  } catch {
+    // Analytics must never block the admin save.
+  } finally {
+    if (!switched) return;
+    window.flowUser = previous;
+    try {
+      if (previous) callFlow("identify", [previous]);
+    } catch {
+      // window.flowUser is already the previous visitor.
+    }
+  }
+}
+
+function lineItemsText(order) {
+  const rows = Array.isArray(order?.items) ? order.items : [];
+  if (!rows.length) return "";
+  return rows
+    .map((item) => `${String(item?.name || "Item")} x ${Number(item?.quantity) || 1}`)
+    .join(", ");
+}
+
+function deliveryPartnerText(order) {
+  if (!order || typeof order !== "object") return "";
+  // The Flow property is spelled delvery_partner. Read a real order field if
+  // one is present; otherwise send an empty string.
+  const keys = ["delvery_partner", "delivery_partner", "deliveryPartner"];
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(order, key) && order[key] != null) {
+      return String(order[key]);
+    }
+  }
+  return "";
+}
+
+export function trackOutForDeliveryForCustomer(order) {
+  try {
+    if (!order || !isOutForDelivery(order.status)) return;
+    const id = Number(order.order_id ?? order.id);
+    if (!Number.isFinite(id)) return;
+    const revenue = Number(order.total_amount ?? order.total);
+    trackForCustomer(
+      {
+        phone: order.phone,
+        name: order.name,
+        email: order.email,
+      },
+      "out_for_delivery",
+      {
+        name: order.name ? String(order.name) : "",
+        order_id: id,
+        items: lineItemsText(order),
+        total: Number.isFinite(revenue) ? revenue : 0,
+        delvery_partner: deliveryPartnerText(order),
+      }
+    );
+  } catch {
+    // Analytics must never block the admin save.
+  }
+}

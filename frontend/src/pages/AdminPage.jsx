@@ -11,6 +11,8 @@ import {
   updateMenuItem,
   updateOrderStatus,
 } from "../api";
+import { useAuth } from "../context/AuthContext";
+import { setFlowUser, trackOutForDeliveryForCustomer } from "../flow";
 import { SPICE_LABELS, ORDER_STATUSES, formatINR, orderIdOf, spiceLabel, statusLabel } from "../format";
 import { Empty, ErrorNote, Loading } from "../components/Status";
 
@@ -34,6 +36,7 @@ function blankToNull(value) {
 }
 
 export function AdminPage() {
+  const { user } = useAuth();
   const [menu, setMenu] = useState([]);
   const [orders, setOrders] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -184,6 +187,14 @@ export function AdminPage() {
         )
       );
       setNotice(`Order #${result.order_id} is now ${statusLabel(result.status)}.`);
+      if (result?.status === "out for delivery") {
+        if (user) setFlowUser(user);
+        trackOutForDeliveryForCustomer({
+          ...order,
+          order_id: result.order_id,
+          status: result.status,
+        });
+      }
     } catch (err) {
       if (err.status !== 401) setError(err.message);
     } finally {
