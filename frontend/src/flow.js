@@ -156,34 +156,48 @@ function customerIdentity(user) {
   });
 }
 
-// Queue identify, then track, then the previous visitor. window.flowUser is the
-// customer only while track is queued, then the admin profile is put back.
+// The pixel applies window.flowUser on a timer, and it flushes the queue about
+// two seconds after track. Restoring the admin in the same turn puts that
+// identify in the same batch and the campaign never stays on the customer.
+const RESTORE_IDENTITY_MS = 2500;
+let restoreSerial = 0;
+
+function restoreFlowUserLater(previous) {
+  const serial = ++restoreSerial;
+  setTimeout(() => {
+    if (serial !== restoreSerial) return;
+    try {
+      window.flowUser = previous;
+      if (previous) callFlow("identify", [previous]);
+    } catch {
+      // The customer event has already been queued.
+    }
+  }, RESTORE_IDENTITY_MS);
+}
+
+// Identify as the customer, then track. The admin profile is put back only
+// after the pixel has had time to flush this event under the customer.
 export function trackForCustomer(identity, eventName, props) {
   if (typeof window === "undefined") return;
   if (typeof eventName !== "string" || !eventName) return;
 
   const previous = copyIdentity(window.flowUser);
   const customer = customerIdentity(identity);
-  let switched = false;
+  const switched = Boolean(customer?.phone);
 
   try {
-    if (customer) {
+    if (switched) {
       window.flowUser = customer;
-      switched = true;
       callFlow("identify", [customer]);
     }
-    trackFlow(eventName, props);
+    const traits = props && typeof props === "object" ? { ...props } : {};
+    if (customer?.phone && traits.phone == null) traits.phone = customer.phone;
+    trackFlow(eventName, traits);
   } catch {
     // Analytics must never block the admin save.
-  } finally {
-    if (!switched) return;
-    window.flowUser = previous;
-    try {
-      if (previous) callFlow("identify", [previous]);
-    } catch {
-      // window.flowUser is already the previous visitor.
-    }
   }
+
+  if (switched) restoreFlowUserLater(previous);
 }
 
 function lineItemsText(order) {
@@ -207,21 +221,35 @@ function deliveryPartnerText(order) {
   return "";
 }
 
+function orderContact(order) {
+  const nested = order?.customer && typeof order.customer === "object" ? order.customer : order?.user;
+  const source = nested && typeof nested === "object" ? nested : {};
+  return {
+    phone: order?.phone ?? order?.phone_number ?? source.phone ?? source.phone_number,
+    name: order?.name ?? order?.full_name ?? source.name ?? source.full_name,
+    email: order?.email ?? source.email,
+  };
+}
+
 export function trackOutForDeliveryForCustomer(order) {
   try {
     if (!order || !isOutForDelivery(order.status)) return;
     const id = Number(order.order_id ?? order.id);
     if (!Number.isFinite(id)) return;
+    const contact = orderContact(order);
+    const phone = phoneForFlow(contact.phone);
+    if (!phone) return;
     const revenue = Number(order.total_amount ?? order.total);
     trackForCustomer(
       {
-        phone: order.phone,
-        name: order.name,
-        email: order.email,
+        phone: contact.phone,
+        name: contact.name,
+        email: contact.email,
       },
       "out_for_delivery",
       {
-        name: order.name ? String(order.name) : "",
+        phone,
+        name: contact.name ? String(contact.name) : "",
         order_id: id,
         items: lineItemsText(order),
         total: Number.isFinite(revenue) ? revenue : 0,

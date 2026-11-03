@@ -131,6 +131,22 @@ def get_my_orders(db: Session, user_id: int):
     return orders
 
 
+def customer_contact(db: Session, user_id: int):
+    customer = (
+        db.query(User)
+        .options(load_only(User.id, User.name, User.email, User.phone))
+        .filter(User.id == user_id)
+        .first()
+    )
+    if customer is None:
+        return {"name": "", "phone": "", "email": ""}
+    return {
+        "name": customer.name or "",
+        "phone": customer.phone or "",
+        "email": customer.email or "",
+    }
+
+
 def update_order_status(db: Session, order_id: int, status: str):
     order = db.query(Order).filter(
         Order.id == order_id

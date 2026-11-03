@@ -6,6 +6,7 @@ from security import get_current_user,  require_admin
 from services.order_service import (
     create_order,
     cancel_order,
+    customer_contact,
     get_order_details,
     get_my_orders,
     update_order_status,
@@ -77,10 +78,14 @@ def update_order_status_endpoint(
         status=status_data.status
     )
 
+    contact = customer_contact(db, order.user_id)
     return {
         "message": "Order status updated successfully",
         "order_id": order.id,
-        "status": order.status
+        "status": order.status,
+        "name": contact["name"],
+        "phone": contact["phone"],
+        "email": contact["email"],
     }
 
 
